@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Client Priority Board · Stylitics</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #F1F5F9; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+    const { useState, useMemo, useCallback, useEffect } = React;
+
+
+// ─────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────
+const COLORS = {
+  atrisk:  { bg: "#FDF4FF", border: "#E879F9", badge: "#A21CAF", text: "#701A75" },
+  high:    { bg: "#FFF7ED", border: "#FDBA74", badge: "#F97316", text: "#9A3412" },
+  medium:  { bg: "#FEFCE8", border: "#FDE047", badge: "#EAB308", text: "#854D0E" },
+  closed:  { bg: "#F3F4F6", border: "#D1D5DB", badge: "#6B7280", text: "#374151" },
+};
+
+const TRIGGER_LABELS = {
+  renewal: "🔄 Renewal", qbr: "📊 QBR", atrisk: "⚠️ At Risk",
+  new: "✨ New Client", escalation: "🚨 Escalation", other: "📌 Other",
+};
+
+const CLIENT_DIRECTORY = [{"name":"Abercrombie & Fitch","tier":"Tier 1","amLead":"Molly Chason","podLead":"Molly Chason"},{"name":"Abercrombie & Fitch EU","tier":"Tier 1","amLead":"Molly Chason","podLead":"Molly Chason"},{"name":"Abercrombie & Fitch UK","tier":"Tier 1","amLead":"Molly Chason","podLead":"Molly Chason"},{"name":"Abercrombie Kids","tier":"Tier 1","amLead":"Molly Chason","podLead":"Molly Chason"},{"name":"Abercrombie Kids EU","tier":"Tier 1","amLead":"Molly Chason","podLead":"Molly Chason"},{"name":"Abercrombie Kids UK","tier":"Tier 1","amLead":"Molly Chason","podLead":"Molly Chason"},{"name":"Academy Sports + Outdoors*","tier":"Tier 3","amLead":"Jenel Gordon","podLead":"Marine Berrebi"},{"name":"Adidas","tier":"Tier 1","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"Aerie","tier":"Tier 2","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"Aeropostale*","tier":"Tier 3","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"All Saints","tier":"","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"American Eagle Outfitters","tier":"Tier 2","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"Anne Klein","tier":"Tier 3","amLead":"Stacy Yetter","podLead":"Molly Chason"},{"name":"Anthropologie*","tier":"Tier 2","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"Ariat","tier":"Tier 3","amLead":"Becca Moore","podLead":"Molly Chason"},{"name":"Ariat EU","tier":"Tier 3","amLead":"Becca Moore","podLead":"Molly Chason"},{"name":"Armani","tier":"","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"ASOS","tier":"Tier 1","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"Bealls, Inc","tier":"Tier 2","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Belk*","tier":"Tier 2","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"Birdsnest","tier":"Tier 3","amLead":"Nikki Perrotti","podLead":"Molly Chason"},{"name":"Bloomingdale's","tier":"Tier 1","amLead":"Nikki Perrotti","podLead":"Molly Chason"},{"name":"Bloomingdale's Home","tier":"Tier 1","amLead":"Nikki Perrotti","podLead":"Molly Chason"},{"name":"Boden","tier":"Tier 2","amLead":"Victoria Kulesza","podLead":"Molly Chason"},{"name":"Boll & Branch","tier":"Tier 3","amLead":"Erin Gilford","podLead":"Molly Chason"},{"name":"Boozt","tier":"Tier 1","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"Boston Proper","tier":"Tier 4","amLead":"Victoria Kulesza","podLead":"Molly Chason"},{"name":"Brooks Brothers*","tier":"Tier 2","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"Camel Active","tier":"Tier 4","amLead":"Erin Gilford","podLead":"Molly Chason"},{"name":"Carl's Golfland","tier":"Tier 4","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"Carve Designs","tier":"Tier 4","amLead":"Needs Owner","podLead":"Molly Chason"},{"name":"Cato","tier":"Tier 4","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Champs Sports","tier":"Tier 1","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"City Chic","tier":"","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"Coldwater Creek","tier":"Tier 4","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"Columbia Sportswear","tier":"Tier 2","amLead":"Jenel Gordon","podLead":"Molly Chason"},{"name":"COS","tier":"Tier 1","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"Cotopaxi","tier":"","amLead":"Needs Owner","podLead":"Marine Berrebi"},{"name":"Cotton Traders","tier":"Tier 3","amLead":"Erin Gilford","podLead":"Molly Chason"},{"name":"Country Road Group","tier":"Tier 1","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"Crew Clothing","tier":"Tier 4","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"Desigual","tier":"Tier 2","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Dick's Sporting Goods*","tier":"Tier 1","amLead":"Molly Chason","podLead":"Marine Berrebi"},{"name":"Dillard's","tier":"Tier 2","amLead":"Erin Gilford","podLead":"Molly Chason"},{"name":"Doen","tier":"Tier 3","amLead":"Needs Owner","podLead":"Molly Chason"},{"name":"DTLR","tier":"Tier 2","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"Eddie Bauer","tier":"Tier 2","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"Eddie Bauer CA","tier":"Tier 2","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"Eileen Fisher","tier":"Tier 3","amLead":"Needs Owner","podLead":"Marine Berrebi"},{"name":"Express*","tier":"Tier 2","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"Faherty","tier":"Tier 4","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"Fanatics","tier":"Tier 1","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Finish Line","tier":"Tier 1","amLead":"Marine Berrebi","podLead":"Marine Berrebi"},{"name":"Flag & Anthem","tier":"Tier 4","amLead":"Victoria Kulesza","podLead":"Molly Chason"},{"name":"Foot Locker Kids","tier":"Tier 1","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Foot Locker*","tier":"Tier 1","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Golf Galaxy","tier":"Tier 3","amLead":"Molly Chason","podLead":"Marine Berrebi"},{"name":"Gym Plus Coffee","tier":"Tier 3","amLead":"Katrina Storelli","podLead":"Molly Chason"},{"name":"Gymboree","tier":"Tier 4","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"Gymshark","tier":"Tier 2","amLead":"Angelina Kaliszak","podLead":"Molly Chason"},{"name":"Hanna Andersson","tier":"Tier 3","amLead":"Erin Gilford","podLead":"Molly Chason"},{"name":"Harley Davidson","tier":"Tier 3","amLead":"Becca Moore","podLead":"Molly Chason"},{"name":"Helly Hansen","tier":"Tier 3","amLead":"Needs Owner","podLead":"Marine Berrebi"},{"name":"Hibbett Sports","tier":"Tier 2","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"Hoka EMEA*","tier":"Tier 2","amLead":"Jenel Gordon","podLead":"Molly Chason"},{"name":"Hoka*","tier":"Tier 2","amLead":"Jenel Gordon","podLead":"Molly Chason"},{"name":"Hollister & Gilly Hicks","tier":"Tier 2","amLead":"Molly Chason","podLead":"Molly Chason"},{"name":"Hollister & Gilly Hicks EU","tier":"Tier 2","amLead":"Molly Chason","podLead":"Molly Chason"},{"name":"Hollister & Gilly Hicks UK","tier":"Tier 2","amLead":"Molly Chason","podLead":"Molly Chason"},{"name":"Huckberry","tier":"Tier 3","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"J.Crew Factory","tier":"Tier 3","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"J.Crew*","tier":"Tier 2","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"J.Jill","tier":"Tier 4","amLead":"Jenel Gordon","podLead":"Molly Chason"},{"name":"JCPenney Home*","tier":"Tier 2","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"JCPenney*","tier":"Tier 2","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"JD Sports APAC*","tier":"Tier 1","amLead":"Marine Berrebi","podLead":"Marine Berrebi"},{"name":"JD Sports EU*","tier":"Tier 1","amLead":"Marine Berrebi","podLead":"Marine Berrebi"},{"name":"JD Sports UK*","tier":"Tier 1","amLead":"Marine Berrebi","podLead":"Marine Berrebi"},{"name":"JD Sports*","tier":"Tier 1","amLead":"Marine Berrebi","podLead":"Marine Berrebi"},{"name":"Johnny Was","tier":"Tier 3","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Johnston & Murphy","tier":"Tier 2","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"JoS. A. Bank","tier":"Tier 3","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"Kathy Kuo Home","tier":"","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"L.L.Bean","tier":"Tier 1","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"L'Agence","tier":"Tier 4","amLead":"Angelina Kaliszak","podLead":"Molly Chason"},{"name":"Lands' End","tier":"Tier 1","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"Lands' End EMEA","tier":"Tier 1","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"Lane Bryant","tier":"Tier 3","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Lee EMEA","tier":"Tier 1","amLead":"Erin Gilford","podLead":"Marine Berrebi"},{"name":"Lee NAM","tier":"Tier 3","amLead":"Erin Gilford","podLead":"Marine Berrebi"},{"name":"Life Style Sports","tier":"Tier 3","amLead":"Becca Moore","podLead":"Molly Chason"},{"name":"Lilac Blonde","tier":"Tier 3","amLead":"Katrina Storelli","podLead":"Molly Chason"},{"name":"Lilly Pulitzer","tier":"Tier 2","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Liverpool LA","tier":"Tier 4","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"Loewe","tier":"Tier 4","amLead":"Virginia Wortmann","podLead":"Molly Chason"},{"name":"Lspace","tier":"Tier 3","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"Lucky Brand*","tier":"Tier 3","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"Macy's*","tier":"Tier 1","amLead":"Nikki Perrotti","podLead":"Molly Chason"},{"name":"Madewell","tier":"Tier 2","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"Magnolia","tier":"Tier 4","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"MANGO","tier":"Tier 1","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"Marc Cain","tier":"Tier 4","amLead":"Mikaela Strueli","podLead":"Molly Chason"},{"name":"Maurices","tier":"Tier 3","amLead":"Jenel Gordon","podLead":"Marine Berrebi"},{"name":"Mavi","tier":"Tier 3","amLead":"Needs Owner","podLead":"Molly Chason"},{"name":"McGee & Co","tier":"Tier 3","amLead":"Virginia Wortmann","podLead":"Molly Chason"},{"name":"Men's Wearhouse","tier":"Tier 3","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"Miu Miu (Prada Group)","tier":"Tier 4","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"MNML","tier":"Tier 3","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Mother Denim","tier":"Tier 4","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"Myer","tier":"Tier 1","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"Nautica*","tier":"Tier 3","amLead":"Stacy Yetter","podLead":"Marine Berrebi"},{"name":"New Balance*","tier":"Tier 2","amLead":"Jenel Gordon","podLead":"Marine Berrebi"},{"name":"Nike","tier":"Tier 1","amLead":"Angelina Kaliszak","podLead":"Molly Chason"},{"name":"Nike Asia","tier":"Tier 1","amLead":"Angelina Kaliszak","podLead":"Molly Chason"},{"name":"Nike EMEA","tier":"Tier 1","amLead":"Angelina Kaliszak","podLead":"Molly Chason"},{"name":"Noli Shop","tier":"Tier 4","amLead":"Jane Chung","podLead":"Molly Chason"},{"name":"Public Lands","tier":"Tier 3","amLead":"Molly Chason","podLead":"Marine Berrebi"},{"name":"Puma Canada","tier":"Tier 2","amLead":"Jenel Gordon","podLead":"Marine Berrebi"},{"name":"Puma*","tier":"Tier 2","amLead":"Jenel Gordon","podLead":"Marine Berrebi"},{"name":"Quince","tier":"Tier 2","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Ralph Lauren","tier":"Tier 1","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"Revolve","tier":"Tier 2","amLead":"Molly Chason","podLead":"Molly Chason"},{"name":"Rhone Apparel","tier":"Tier 4","amLead":"Becca Moore","podLead":"Molly Chason"},{"name":"Room & Board","tier":"Tier 2","amLead":"Erin Gilford","podLead":"Molly Chason"},{"name":"Simons","tier":"Tier 2","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"Skechers","tier":"Tier 2","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"Snipes","tier":"Tier 3","amLead":"Jenel Gordon","podLead":"Molly Chason"},{"name":"Soft Surroundings","tier":"Tier 4","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"SportsShoes","tier":"Tier 3","amLead":"Jenel Gordon","podLead":"Molly Chason"},{"name":"State & Liberty","tier":"Tier 4","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Steve Madden","tier":"Tier 3","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"Steve Madden Canada","tier":"Tier 3","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"Stylerunner","tier":"Tier 3","amLead":"Mikaela Strueli","podLead":"Molly Chason"},{"name":"Suzanne's","tier":"Tier 4","amLead":"Angelina Kaliszak","podLead":"Molly Chason"},{"name":"Talbots","tier":"Tier 3","amLead":"Victoria Kulesza","podLead":"Molly Chason"},{"name":"The Children's Place*","tier":"Tier 2","amLead":"Becca Moore","podLead":"Marine Berrebi"},{"name":"The Very Group (UK)","tier":"Tier 2","amLead":"Needs Owner","podLead":"Needs Owner"},{"name":"Torrid*","tier":"Tier 3","amLead":"Nikki Perrotti","podLead":"Molly Chason"},{"name":"True Religion","tier":"Tier 2","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"Tuckernuck","tier":"Tier 3","amLead":"Erin Gilford","podLead":"Molly Chason"},{"name":"UGG EMEA*","tier":"Tier 2","amLead":"Jenel Gordon","podLead":"Molly Chason"},{"name":"UGG*","tier":"Tier 2","amLead":"Jenel Gordon","podLead":"Molly Chason"},{"name":"Veronica Beard","tier":"Tier 3","amLead":"Needs Owner","podLead":"Molly Chason"},{"name":"Versona","tier":"Tier 4","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Victoria Beckham","tier":"Tier 4","amLead":"Angelina Kaliszak","podLead":"Molly Chason"},{"name":"Vineyard Vines","tier":"Tier 2","amLead":"Caroline Robbins","podLead":"Molly Chason"},{"name":"Warehouse One","tier":"Tier 4","amLead":"Angelina Kaliszak","podLead":"Molly Chason"},{"name":"Weissman","tier":"Tier 4","amLead":"Angelina Kaliszak","podLead":"Molly Chason"},{"name":"White Stuff","tier":"Tier 3","amLead":"Ish Alam","podLead":"Marine Berrebi"},{"name":"Woolx","tier":"","amLead":"Needs Owner","podLead":"Marine Berrebi"},{"name":"Wrangler EMEA","tier":"Tier 3","amLead":"Erin Gilford","podLead":"Marine Berrebi"},{"name":"Wrangler NAM","tier":"Tier 3","amLead":"Erin Gilford","podLead":"Marine Berrebi"}];
+
+const CLIENT_LOOKUP = Object.fromEntries(CLIENT_DIRECTORY.map(c => [c.name, c]));
+const AM_LEADS  = ["All AM Leads",  ...new Set(CLIENT_DIRECTORY.map(c => c.amLead).filter(n => n && n !== "Needs Owner").sort())];
+const POD_LEADS = ["All Pod Leads", ...new Set(CLIENT_DIRECTORY.map(c => c.podLead).filter(n => n && n !== "Needs Owner").sort())];
+const PRIORITIES = ["All Priorities", "atrisk", "high", "medium"];
+
+// ─────────────────────────────────────────────────────────────
+// NORM MATCHING
+// ─────────────────────────────────────────────────────────────
+const NORM_LOOKUP = {};
+CLIENT_DIRECTORY.forEach(c => {
+  const key = c.name.replace(/\t/g,"").trim()
+    .replace(/[\u2018\u2019\u201A\u201B\u0060\u00B4]/g,"'")
+    .replace(/[\u201C\u201D\u201E\u201F]/g,'"').toLowerCase();
+  NORM_LOOKUP[key] = c.name;
+});
+const NORM_LOOKUP_NO_APOS = {};
+Object.entries(NORM_LOOKUP).forEach(([k,v]) => { NORM_LOOKUP_NO_APOS[k.replace(/['\u2018\u2019]/g,"")] = v; });
+
+function normKey(raw) {
+  if (raw == null) return "";
+  return String(raw).replace(/\r/g,"").replace(/\t/g,"").trim()
+    .replace(/[\u2018\u2019\u201A\u201B\u0060\u00B4]/g,"'")
+    .replace(/[\u201C\u201D\u201E\u201F]/g,'"')
+    .replace(/^[",]+|[",]+$/g,"").trim().toLowerCase();
+}
+function normMatch(raw) {
+  const key = normKey(raw);
+  if (!key || key.length < 2) return null;
+  if (NORM_LOOKUP[key]) return NORM_LOOKUP[key];
+  const kna = key.replace(/['\u2018\u2019]/g,"");
+  if (NORM_LOOKUP_NO_APOS[kna]) return NORM_LOOKUP_NO_APOS[kna];
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────
+function nowIso() { return new Date().toISOString(); }
+function fmtDt(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) +
+    " " + d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+}
+function fmtDate(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+}
+
+function newTicket(clientName, amLead, podLead, user) {
+  return {
+    id: crypto.randomUUID(),
+    clientName, amLead, podLead, opsLead: "",
+    priority: "high", trigger: "other",
+    status: "open", // open | closed
+    openedAt: nowIso(), closedAt: null, openedBy: user,
+    hsltStatus: "not-started",
+    confirmed: false,
+    // Core fields (each field: { value, updatedBy, updatedAt, attachments })
+    context:       { value:"", updatedBy:"", updatedAt:"", attachments:[] },
+    opsNotes:      { value:"", updatedBy:"", updatedAt:"", attachments:[] },
+    risksBlockers: { value:"", updatedBy:"", updatedAt:"", attachments:[] },
+    etComments:    { value:"", updatedBy:"", updatedAt:"", attachments:[] },
+    // Follow-up log: array of { id, text, author, createdAt, type: "update"|"resolution" }
+    followUps: [],
+  };
+}
+
+function parseUploadedCSVDebug(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const isColumnar = lines.slice(0,3).some(l => l.includes(",,"));
+  const found = new Set(); const unrecognized = [];
+  if (isColumnar) {
+    const rows = lines.map(l => l.split(","));
+    const leadRow = rows[1]||rows[0]; const clientRows = rows.slice(2);
+    const leadCols = [];
+    for (let i=0; i<leadRow.length; i+=2) { if((leadRow[i]||"").replace(/\r/g,"").trim()) leadCols.push(i); }
+    for (const col of leadCols) {
+      for (const row of clientRows) {
+        const raw = (row[col]||"").replace(/\r/g,"").trim().replace(/^"|"$/g,"").trim();
+        if (!raw) continue;
+        const m = normMatch(raw);
+        if (m) found.add(m); else if (raw.length>1) unrecognized.push(raw);
+      }
+    }
+  } else {
+    for (const line of lines) {
+      const cells = line.split(","); let matched = false;
+      for (const cell of cells) {
+        const raw = cell.replace(/\r/g,"").trim().replace(/^"|"$/g,"").trim();
+        if (!raw||raw.length<2) continue;
+        const m = normMatch(raw);
+        if (m) { found.add(m); matched=true; break; }
+      }
+      if (!matched) {
+        const raw = cells[0].replace(/\r/g,"").trim().replace(/^"|"$/g,"").trim();
+        if (raw&&raw.length>1&&raw.toLowerCase()!=="client"&&raw.toLowerCase()!=="account") unrecognized.push(raw);
+      }
+    }
+  }
+  return { found:[...found], unrecognized:unrecognized.slice(0,8) };
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUTH SCREEN
+// ─────────────────────────────────────────────────────────────
+function AuthScreen({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+
+  const handle = () => {
+    const e = email.trim().toLowerCase();
+    if (!e) { setError("Please enter your email."); return; }
+    if (!e.endsWith("@stylitics.com")) { setError("Please sign in with your @stylitics.com email."); return; }
+    onLogin(e);
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#F1F5F9", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'DM Sans','Inter',sans-serif" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
+      <div style={{ background:"#fff", borderRadius:16, padding:"40px 48px", width:"100%", maxWidth:420, boxShadow:"0 20px 60px rgba(0,0,0,0.1)" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:28 }}>
+          <div style={{ width:36, height:36, borderRadius:10, background:"#1D4ED8", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <span style={{ color:"#fff", fontSize:18 }}>◈</span>
+          </div>
+          <div>
+            <div style={{ fontSize:17, fontWeight:800, color:"#111827" }}>Client Priority Board</div>
+            <div style={{ fontSize:12, color:"#9CA3AF" }}>Stylitics · AM × Ops Alignment</div>
+          </div>
+        </div>
+        <div style={{ fontSize:14, fontWeight:600, color:"#374151", marginBottom:8 }}>Sign in with your Stylitics email</div>
+        <input
+          value={email} onChange={e => { setEmail(e.target.value); setError(""); }}
+          onKeyDown={e => e.key==="Enter" && handle()}
+          placeholder="you@stylitics.com"
+          style={{ width:"100%", padding:"10px 14px", borderRadius:8, fontSize:14, border:`1.5px solid ${error?"#FCA5A5":"#E5E7EB"}`, outline:"none", boxSizing:"border-box", marginBottom:6 }}
+        />
+        {error && <div style={{ fontSize:12, color:"#DC2626", marginBottom:8 }}>{error}</div>}
+        <button onClick={handle} style={{ width:"100%", padding:"10px 0", borderRadius:8, fontSize:14, fontWeight:700, background:"#1D4ED8", color:"#fff", border:"none", cursor:"pointer", marginTop:4 }}>
+          Continue →
+        </button>
+        <div style={{ fontSize:11, color:"#9CA3AF", marginTop:14, textAlign:"center" }}>
+          Only @stylitics.com addresses are permitted
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// PRIORITY BADGE
+// ─────────────────────────────────────────────────────────────
+function PriorityBadge({ level }) {
+  const c = COLORS[level]||COLORS.medium;
+  const labels = { atrisk:"At Risk", high:"High", medium:"Medium", closed:"Closed" };
+  return (
+    <span style={{ fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.05em", padding:"3px 10px", borderRadius:99, whiteSpace:"nowrap", background:c.bg, color:c.text, border:`1px solid ${c.border}` }}>
+      {labels[level]||level}
+    </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// FIELD EDITOR (with save button + user attribution)
+// ─────────────────────────────────────────────────────────────
+function FieldEditor({ label, sublabel, field, onSave, placeholder, accentColor, accentBg, rows=3, currentUser }) {
+  const [val, setVal] = useState(field?.value||"");
+  const [dirty, setDirty] = useState(false);
+  const [attachments, setAttachments] = useState(field?.attachments||[]);
+  const uid = label.replace(/\s+/g,"-").toLowerCase();
+
+  // sync if field changes externally (after save)
+  useEffect(() => { setVal(field?.value||""); setAttachments(field?.attachments||[]); setDirty(false); }, [field?.value]);
+
+  const save = () => {
+    if (!dirty) return;
+    onSave({ value:val, updatedBy:currentUser, updatedAt:nowIso(), attachments });
+    setDirty(false);
+  };
+
+  const handleFiles = (e) => {
+    const files = Array.from(e.target.files);
+    const merged = [...attachments, ...files.map(f=>({ name:f.name, size:f.size, addedAt:nowIso() }))];
+    setAttachments(merged);
+    onSave({ value:val, updatedBy:currentUser, updatedAt:nowIso(), attachments:merged });
+  };
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <div style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.07em" }}>
+          {label}
+          {sublabel && <span style={{ fontWeight:400, textTransform:"none", color:"#9CA3AF", marginLeft:6, letterSpacing:0 }}>{sublabel}</span>}
+        </div>
+        <label htmlFor={`file-${uid}`} style={{ fontSize:11, color:"#6B7280", cursor:"pointer", display:"flex", alignItems:"center", gap:3, padding:"2px 7px", borderRadius:5, border:"1px solid #E5E7EB", background:"#F9FAFB", whiteSpace:"nowrap" }}
+          onMouseEnter={e=>{e.currentTarget.style.borderColor=accentColor;e.currentTarget.style.color=accentColor;}}
+          onMouseLeave={e=>{e.currentTarget.style.borderColor="#E5E7EB";e.currentTarget.style.color="#6B7280";}}>
+          📎 Attach
+          <input id={`file-${uid}`} type="file" multiple style={{display:"none"}} onChange={handleFiles}/>
+        </label>
+      </div>
+      <textarea value={val} rows={rows}
+        onChange={e=>{ setVal(e.target.value); setDirty(true); }}
+        placeholder={placeholder}
+        style={{ width:"100%", padding:"9px 11px", borderRadius:7, fontSize:13, border:`1.5px solid ${dirty?accentColor:"#E5E7EB"}`, background:(dirty&&val)?accentBg:"#fff", color:"#374151", lineHeight:1.55, resize:"vertical", fontFamily:"inherit", boxSizing:"border-box", outline:"none", transition:"border-color 0.15s" }}
+      />
+      {attachments.length>0 && (
+        <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+          {attachments.map((a,i)=>(
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:5, background:"#F3F4F6", borderRadius:5, padding:"3px 8px", fontSize:11, color:"#374151" }}>
+              <span>📄 {a.name}</span>
+              <button onClick={()=>{ const m=attachments.filter((_,j)=>j!==i); setAttachments(m); onSave({value:val,updatedBy:currentUser,updatedAt:nowIso(),attachments:m}); }} style={{ background:"none", border:"none", cursor:"pointer", color:"#9CA3AF", fontSize:12, lineHeight:1, padding:0 }}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+      {dirty && (
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <span style={{ fontSize:11, color:"#9CA3AF" }}>Saving as: <strong style={{ color:"#374151" }}>{currentUser}</strong></span>
+          <button onClick={save} style={{ padding:"5px 16px", borderRadius:6, fontSize:12, fontWeight:700, background:accentColor, color:"#fff", border:"none", cursor:"pointer" }}>Save</button>
+        </div>
+      )}
+      {field?.updatedAt && !dirty && (
+        <div style={{ fontSize:10, color:"#9CA3AF" }}>{fmtDt(field.updatedAt)} · {field.updatedBy}</div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// FOLLOW-UP LOG
+// ─────────────────────────────────────────────────────────────
+function FollowUpLog({ ticket, onAddFollowUp, currentUser }) {
+  const [text, setText] = useState("");
+  const [type, setType] = useState("update");
+
+  const add = () => {
+    if (!text.trim()) return;
+    onAddFollowUp({ id:crypto.randomUUID(), text:text.trim(), author:currentUser, createdAt:nowIso(), type });
+    setText(""); setType("update");
+  };
+
+  const typeColors = { update:{ bg:"#EFF6FF", text:"#1D4ED8", label:"Update" }, resolution:{ bg:"#DCFCE7", text:"#166534", label:"Resolution" } };
+
+  return (
+    <div>
+      <div style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:10 }}>Activity Log</div>
+
+      {/* Existing entries */}
+      {ticket.followUps.length===0 && (
+        <div style={{ fontSize:12, color:"#9CA3AF", fontStyle:"italic", marginBottom:12 }}>No follow-ups recorded yet.</div>
+      )}
+      <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
+        {ticket.followUps.map(f => {
+          const tc = typeColors[f.type]||typeColors.update;
+          return (
+            <div key={f.id} style={{ background:"#F9FAFB", borderRadius:8, padding:"10px 14px", borderLeft:`3px solid ${f.type==="resolution"?"#22C55E":"#3B82F6"}` }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:99, background:tc.bg, color:tc.text }}>{tc.label}</span>
+                <span style={{ fontSize:11, color:"#9CA3AF" }}>{fmtDt(f.createdAt)} · {f.author}</span>
+              </div>
+              <div style={{ fontSize:13, color:"#374151", lineHeight:1.55 }}>{f.text}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Add new */}
+      {ticket.status==="open" && (
+        <div style={{ background:"#F8FAFC", borderRadius:8, padding:"12px 14px", border:"1px solid #E5E7EB" }}>
+          <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+            {["update","resolution"].map(t => (
+              <button key={t} onClick={()=>setType(t)} style={{ padding:"4px 14px", borderRadius:6, fontSize:12, fontWeight:600, cursor:"pointer",
+                background:type===t?(t==="resolution"?"#DCFCE7":"#EFF6FF"):"#F3F4F6",
+                color:type===t?(t==="resolution"?"#166534":"#1D4ED8"):"#6B7280",
+                border:type===t?`1.5px solid ${t==="resolution"?"#86EFAC":"#93C5FD"}`:"1.5px solid #E5E7EB" }}>
+                {t==="resolution"?"✅ Resolution":"📝 Update"}
+              </button>
+            ))}
+          </div>
+          <textarea value={text} onChange={e=>setText(e.target.value)} rows={2} placeholder={type==="resolution"?"Describe how this was resolved…":"What happened? What changed?"} style={{ width:"100%", padding:"9px 11px", borderRadius:7, fontSize:13, border:"1.5px solid #E5E7EB", color:"#374151", lineHeight:1.55, resize:"vertical", fontFamily:"inherit", boxSizing:"border-box", outline:"none" }}/>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:8 }}>
+            <span style={{ fontSize:11, color:"#9CA3AF" }}>as <strong style={{ color:"#374151" }}>{currentUser}</strong></span>
+            <button onClick={add} disabled={!text.trim()} style={{ padding:"6px 18px", borderRadius:7, fontSize:12, fontWeight:700, background:text.trim()?"#1D4ED8":"#D1D5DB", color:"#fff", border:"none", cursor:text.trim()?"pointer":"default" }}>Post</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// CLIENT CARD (ticket)
+// ─────────────────────────────────────────────────────────────
+function ClientCard({ ticket, allTickets, onUpdate, onClose, onReopen, onRemove, currentUser }) {
+  const [expanded, setExpanded] = useState(false);
+  const isClosed = ticket.status==="closed";
+  const c = COLORS[isClosed?"closed":ticket.priority]||COLORS.medium;
+
+  // Draft state for meta fields
+  const [draftAM, setDraftAM] = useState(ticket.amLead||"");
+  const [draftPod, setDraftPod] = useState(ticket.podLead||"");
+  const [draftOps, setDraftOps] = useState(ticket.opsLead||"");
+  const [draftPriority, setDraftPriority] = useState(ticket.priority||"high");
+  const [draftTrigger, setDraftTrigger] = useState(ticket.trigger||"other");
+  const [draftHslt, setDraftHslt] = useState(ticket.hsltStatus||"not-started");
+  const [metaDirty, setMetaDirty] = useState(false);
+
+  const saveMeta = () => {
+    onUpdate({ ...ticket, amLead:draftAM, podLead:draftPod, opsLead:draftOps, priority:draftPriority, trigger:draftTrigger, hsltStatus:draftHslt });
+    setMetaDirty(false);
+  };
+
+  const updField = (key) => (val) => onUpdate({ ...ticket, [key]:val });
+  const addFollowUp = (fu) => onUpdate({ ...ticket, followUps:[...(ticket.followUps||[]), fu] });
+
+  // Historical tickets for same client (other tickets, closed)
+  const history = allTickets.filter(t => t.clientName===ticket.clientName && t.id!==ticket.id && t.status==="closed");
+
+  const inputSt = { width:"100%", padding:"7px 10px", borderRadius:7, fontSize:13, border:"1.5px solid #E5E7EB", color:"#374151", outline:"none", boxSizing:"border-box", background:"#fff" };
+
+  return (
+    <div style={{ background:"#fff", borderLeft:`4px solid ${c.badge}`, borderBottom:"1px solid #F3F4F6", boxShadow:expanded?"0 2px 16px rgba(0,0,0,0.06)":"none", opacity:isClosed?0.75:1 }}>
+      {/* Row header */}
+      <div onClick={()=>setExpanded(e=>!e)} style={{ display:"grid", gridTemplateColumns:"1.6fr 1fr 1fr 110px 110px 28px", alignItems:"center", gap:12, padding:"13px 18px", cursor:"pointer", userSelect:"none", background:expanded?c.bg:"transparent", transition:"background 0.15s" }}
+        onMouseEnter={e=>{ if(!expanded) e.currentTarget.style.background="#F9FAFB"; }}
+        onMouseLeave={e=>{ if(!expanded) e.currentTarget.style.background=expanded?c.bg:"transparent"; }}>
+        <div>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ fontWeight:700, color:"#111827", fontSize:14 }}>{ticket.clientName}</span>
+            {isClosed && <span style={{ fontSize:10, fontWeight:700, color:"#6B7280", background:"#F3F4F6", padding:"1px 6px", borderRadius:99, border:"1px solid #D1D5DB" }}>CLOSED</span>}
+          </div>
+          {ticket.context?.value && (
+            <div style={{ fontSize:12, color:"#6B7280", marginTop:2, lineHeight:1.4, display:"-webkit-box", WebkitLineClamp:1, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{ticket.context.value}</div>
+          )}
+        </div>
+        <div style={{ fontSize:13, color:"#374151" }}>{ticket.amLead}</div>
+        <div style={{ fontSize:12, color:"#6B7280" }}>{ticket.podLead||"—"}</div>
+        <PriorityBadge level={isClosed?"closed":ticket.priority}/>
+        <span style={{ fontSize:11, fontWeight:600, padding:"2px 8px", borderRadius:6, background:"#F3F4F6", color:"#4B5563", whiteSpace:"nowrap" }}>{TRIGGER_LABELS[ticket.trigger]}</span>
+        <span style={{ color:"#C4C4C4", fontSize:14, textAlign:"center" }}>{expanded?"▲":"▼"}</span>
+      </div>
+
+      {/* Expanded */}
+      {expanded && (
+        <div style={{ padding:"18px 20px 24px", borderTop:`1px solid ${c.border}` }}>
+
+          {/* Meta grid: AM | Pod | Ops | Priority | Trigger | HSLT */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:16 }}>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5 }}>AM Lead</div>
+              <div style={{ position:"relative" }}>
+              <input value={draftAM} onChange={e=>{setDraftAM(e.target.value);setMetaDirty(true);}} style={inputSt}/>
+              {CLIENT_LOOKUP[ticket.clientName]?.amLead && draftAM !== CLIENT_LOOKUP[ticket.clientName]?.amLead && !metaDirty && (
+                <span style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", fontSize:9, fontWeight:700, color:"#1D4ED8", background:"#EFF6FF", padding:"1px 5px", borderRadius:3, whiteSpace:"nowrap" }}>EDITED</span>
+              )}
+            </div>
+            </div>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5 }}>Pod Lead</div>
+              <div style={{ position:"relative" }}>
+              <input value={draftPod} onChange={e=>{setDraftPod(e.target.value);setMetaDirty(true);}} style={inputSt}/>
+              {CLIENT_LOOKUP[ticket.clientName]?.podLead && draftPod !== CLIENT_LOOKUP[ticket.clientName]?.podLead && !metaDirty && (
+                <span style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", fontSize:9, fontWeight:700, color:"#1D4ED8", background:"#EFF6FF", padding:"1px 5px", borderRadius:3, whiteSpace:"nowrap" }}>EDITED</span>
+              )}
+            </div>
+            </div>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5 }}>Ops Lead</div>
+              <input value={draftOps} onChange={e=>{setDraftOps(e.target.value);setMetaDirty(true);}} style={inputSt}/>
+            </div>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5 }}>Priority Level</div>
+              <div style={{ display:"flex", gap:5 }}>
+                {["atrisk","high","medium"].map(p=>(
+                  <button key={p} onClick={()=>{setDraftPriority(p);setMetaDirty(true);}} style={{ flex:1, padding:"6px 0", borderRadius:7, fontSize:11, fontWeight:700, textTransform:"capitalize", cursor:"pointer", background:draftPriority===p?COLORS[p].badge:"#F9FAFB", color:draftPriority===p?"#fff":"#9CA3AF", border:draftPriority===p?`2px solid ${COLORS[p].badge}`:"2px solid #E5E7EB" }}>
+                    {p==="atrisk"?"At Risk":p.charAt(0).toUpperCase()+p.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:5 }}>Trigger Type</div>
+              <select value={draftTrigger} onChange={e=>{setDraftTrigger(e.target.value);setMetaDirty(true);}} style={{ ...inputSt, cursor:"pointer" }}>
+                {Object.entries(TRIGGER_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* HSLT */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>HSLT Status</div>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              {[{val:"not-started",label:"Not Started",col:"#6B7280",bg:"#F3F4F6",bdr:"#D1D5DB"},{val:"enabled-testing",label:"Enabled – Testing",col:"#0369A1",bg:"#EFF6FF",bdr:"#93C5FD"},{val:"enabled-paused",label:"Enabled – Paused",col:"#92400E",bg:"#FEF3C7",bdr:"#FCD34D"},{val:"active",label:"Active",col:"#166534",bg:"#DCFCE7",bdr:"#86EFAC"}].map(opt=>(
+                <button key={opt.val} onClick={()=>{setDraftHslt(opt.val);setMetaDirty(true);}} style={{ padding:"5px 14px", borderRadius:7, fontSize:12, fontWeight:600, cursor:"pointer", background:draftHslt===opt.val?opt.bg:"#F9FAFB", color:draftHslt===opt.val?opt.col:"#9CA3AF", border:draftHslt===opt.val?`2px solid ${opt.bdr}`:"2px solid #E5E7EB" }}>{opt.label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Meta save button */}
+          {metaDirty && (
+            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:16 }}>
+              <button onClick={saveMeta} style={{ padding:"6px 20px", borderRadius:7, fontSize:12, fontWeight:700, background:"#1D4ED8", color:"#fff", border:"none", cursor:"pointer" }}>Save Changes</button>
+            </div>
+          )}
+
+          <div style={{ height:1, background:"#F3F4F6", marginBottom:18 }}/>
+
+          {/* Content fields: 2-col grid */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:18 }}>
+            <FieldEditor label="Context" sublabel="why is this account flagged?" field={ticket.context} onSave={updField("context")} placeholder="Describe the reason this account is at this priority level…" accentColor="#1D4ED8" accentBg="#EFF6FF" currentUser={currentUser}/>
+            <FieldEditor label="Ops Notes & Next Steps" sublabel={null} field={ticket.opsNotes} onSave={updField("opsNotes")} placeholder="Who is doing what by when? What do you need from other teams?" accentColor="#0369A1" accentBg="#F0F9FF" currentUser={currentUser}/>
+            <FieldEditor label="Risks & Blockers / Open Questions" sublabel={null} field={ticket.risksBlockers} onSave={updField("risksBlockers")} placeholder="Risks, blockers, and open questions that could impact this account…" accentColor="#DC2626" accentBg="#FEF2F2" currentUser={currentUser}/>
+            <FieldEditor label="ET Comments" sublabel={null} field={ticket.etComments} onSave={updField("etComments")} placeholder="Executive team visibility notes…" accentColor="#0F766E" accentBg="#F0FDFA" currentUser={currentUser}/>
+          </div>
+
+          <div style={{ height:1, background:"#F3F4F6", marginBottom:18 }}/>
+
+          {/* Follow-up log */}
+          <FollowUpLog ticket={ticket} onAddFollowUp={addFollowUp} currentUser={currentUser}/>
+
+          <div style={{ height:1, background:"#F3F4F6", margin:"18px 0 14px" }}/>
+
+          {/* Historical tickets */}
+          {history.length>0 && (
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>📁 Previous Tickets ({history.length})</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {history.map(h=>(
+                  <div key={h.id} style={{ background:"#F9FAFB", borderRadius:8, padding:"10px 14px", border:"1px solid #E5E7EB" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                      <span style={{ fontSize:12, fontWeight:600, color:"#374151" }}>Opened {fmtDate(h.openedAt)} · Closed {fmtDate(h.closedAt)}</span>
+                      <span style={{ fontSize:11, color:"#9CA3AF" }}>{h.followUps?.length||0} follow-up{(h.followUps?.length||0)!==1?"s":""}</span>
+                    </div>
+                    {h.context?.value && <div style={{ fontSize:12, color:"#6B7280", lineHeight:1.4, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{h.context.value}</div>}
+                    {h.followUps?.filter(f=>f.type==="resolution").slice(-1).map(r=>(
+                      <div key={r.id} style={{ marginTop:6, fontSize:12, color:"#166534", background:"#DCFCE7", borderRadius:5, padding:"4px 8px" }}>✅ {r.text}</div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Footer actions */}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
+              <div onClick={()=>onUpdate({...ticket,confirmed:!ticket.confirmed})} style={{ width:34, height:18, borderRadius:99, cursor:"pointer", background:ticket.confirmed?"#2563EB":"#D1D5DB", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
+                <div style={{ position:"absolute", top:2, left:ticket.confirmed?18:2, width:14, height:14, borderRadius:"50%", background:"#fff", transition:"left 0.2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }}/>
+              </div>
+              <span style={{ fontSize:12, color:"#374151", fontWeight:500 }}>AM Lead confirmed this priority</span>
+            </label>
+            <div style={{ display:"flex", gap:8 }}>
+              {!isClosed ? (
+                <button onClick={()=>onClose(ticket.id)} style={{ padding:"6px 14px", borderRadius:7, fontSize:12, fontWeight:600, background:"#DCFCE7", color:"#166534", border:"1.5px solid #86EFAC", cursor:"pointer" }}>✓ Close Ticket</button>
+              ) : (
+                <button onClick={()=>onReopen(ticket.id)} style={{ padding:"6px 14px", borderRadius:7, fontSize:12, fontWeight:600, background:"#EFF6FF", color:"#1D4ED8", border:"1.5px solid #93C5FD", cursor:"pointer" }}>↩ Reopen</button>
+              )}
+              <button onClick={()=>onRemove(ticket.id)} style={{ padding:"6px 12px", borderRadius:7, fontSize:12, color:"#9CA3AF", background:"none", border:"1px solid #E5E7EB", cursor:"pointer" }}
+                onMouseEnter={e=>{e.currentTarget.style.color="#EF4444";e.currentTarget.style.borderColor="#FCA5A5";e.currentTarget.style.background="#FEF2F2";}}
+                onMouseLeave={e=>{e.currentTarget.style.color="#9CA3AF";e.currentTarget.style.borderColor="#E5E7EB";e.currentTarget.style.background="none";}}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// AI SUMMARY (uses ALL tickets including closed)
+// ─────────────────────────────────────────────────────────────
+function AISummary({ allTickets }) {
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const run = async () => {
+    if (!allTickets.length) return;
+    setLoading(true); setError(null);
+    const payload = allTickets.map(t=>({
+      client:t.clientName, priority:t.priority, status:t.status,
+      context:t.context?.value||"", opsNotes:t.opsNotes?.value||"",
+      risksBlockers:t.risksBlockers?.value||"", etComments:t.etComments?.value||"",
+      followUps:(t.followUps||[]).map(f=>f.text).join("; "),
+    }));
+    const prompt = `You are a business intelligence assistant. Analyze these client account tickets (both open and closed) and identify cross-account patterns.
+Return ONLY valid JSON, no markdown, no code fences, no explanation:
+{"issueThemes":["2-sentence specific theme","..."],"riskThemes":["2-sentence specific theme","..."],"headline":"one sentence summary"}
+
+Tickets to analyze:
+${JSON.stringify(payload, null, 2)}`;
+    try {
+      const res = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyA9YijvP20MakSmqs2zd3RWX0wkyEyr7Wc",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 1000 }
+          })
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) { setError("API error: " + (data.error?.message || res.status)); setLoading(false); return; }
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      if (!text) { setError("No response from Gemini. Try again."); setLoading(false); return; }
+      // Strip markdown fences and find the JSON object
+      const clean = text.replace(/```json|```/g,"").trim();
+      const jsonStart = clean.indexOf("{");
+      const jsonEnd = clean.lastIndexOf("}");
+      if (jsonStart === -1 || jsonEnd === -1) { setError("Unexpected response format. Raw: " + clean.slice(0,200)); setLoading(false); return; }
+      setSummary(JSON.parse(clean.slice(jsonStart, jsonEnd + 1)));
+    } catch(e) { setError("Error: " + e.message); }
+    setLoading(false);
+  };
+
+  if (!allTickets.length) return null;
+  const open = allTickets.filter(t=>t.status==="open").length;
+  const closed = allTickets.filter(t=>t.status==="closed").length;
+
+  return (
+    <div style={{ background:"linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 100%)", borderRadius:14, padding:"20px 24px", marginBottom:22 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:16, marginBottom:summary?16:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontSize:18 }}>✦</span>
+          <div>
+            <div style={{ fontWeight:800, fontSize:14, color:"#fff" }}>AI Theme Summary</div>
+            <div style={{ fontSize:11, color:"#93C5FD", marginTop:1 }}>{open} open · {closed} closed · all tickets included</div>
+          </div>
+        </div>
+        <button onClick={run} disabled={loading} style={{ padding:"7px 16px", borderRadius:8, fontSize:12, fontWeight:700, background:"rgba(255,255,255,0.15)", color:"#fff", border:"1px solid rgba(255,255,255,0.3)", cursor:loading?"default":"pointer", whiteSpace:"nowrap" }}>
+          {loading?"Analyzing…":summary?"↺ Refresh":"Generate Summary"}
+        </button>
+      </div>
+      {error && <div style={{ fontSize:13, color:"#FCA5A5", marginTop:8 }}>{error}</div>}
+      {!summary&&!loading&&!error && <div style={{ fontSize:13, color:"#93C5FD" }}>Click "Generate Summary" to surface common themes across all tickets, including closed ones.</div>}
+      {summary&&!loading && (
+        <>
+          {summary.headline && <div style={{ fontSize:13, color:"#E0F2FE", fontStyle:"italic", marginBottom:14, paddingBottom:14, borderBottom:"1px solid rgba(255,255,255,0.15)" }}>"{summary.headline}"</div>}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#93C5FD", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>🔍 Common Client Issues</div>
+              <ul style={{ margin:0, padding:"0 0 0 16px", display:"flex", flexDirection:"column", gap:6 }}>{(summary.issueThemes||[]).map((t,i)=><li key={i} style={{ fontSize:13, color:"#E0F2FE", lineHeight:1.5 }}>{t}</li>)}</ul>
+            </div>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:"#FCA5A5", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>⚠️ Common Risks & Blockers</div>
+              <ul style={{ margin:0, padding:"0 0 0 16px", display:"flex", flexDirection:"column", gap:6 }}>{(summary.riskThemes||[]).map((t,i)=><li key={i} style={{ fontSize:13, color:"#FECACA", lineHeight:1.5 }}>{t}</li>)}</ul>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// UPLOAD PANEL
+// ─────────────────────────────────────────────────────────────
+function UploadPanel({ existingTickets, onImport, currentUser, leadOverrides }) {
+  const [dragging, setDragging] = useState(false);
+  const [preview, setPreview] = useState(null);
+
+  const process = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const { found, unrecognized } = parseUploadedCSVDebug(e.target.result);
+      const existing = new Set(existingTickets.filter(t=>t.status==="open").map(t=>t.clientName));
+      setPreview({ toAdd:found.filter(n=>!existing.has(n)), skipped:found.filter(n=>existing.has(n)), unrecognized });
+    };
+    reader.readAsText(file);
+  };
+
+  const doImport = () => {
+    if (!preview?.toAdd?.length) return;
+    onImport(preview.toAdd.map(name => {
+      const d = CLIENT_LOOKUP[name];
+      // Manual overrides always win over directory data
+      const overrides = (leadOverrides||{})[name]||{};
+      const t = newTicket(
+        name,
+        overrides.amLead  ?? d?.amLead  ?? "",
+        overrides.podLead ?? d?.podLead ?? "",
+        currentUser
+      );
+      if (overrides.opsLead !== undefined) t.opsLead = overrides.opsLead;
+      return t;
+    }));
+    setPreview(null);
+  };
+
+  return (
+    <div style={{ marginBottom:22 }}>
+      <div onDragOver={e=>{e.preventDefault();setDragging(true);}} onDragLeave={()=>setDragging(false)}
+        onDrop={e=>{e.preventDefault();setDragging(false);const f=e.dataTransfer.files[0];if(f)process(f);}}
+        onClick={()=>document.getElementById("csv-upload").click()}
+        style={{ border:`2px dashed ${dragging?"#1D4ED8":"#D1D5DB"}`, borderRadius:12, padding:"18px 24px", textAlign:"center", background:dragging?"#EFF6FF":"#F9FAFB", cursor:"pointer", transition:"all 0.2s" }}>
+        <div style={{ fontSize:22, marginBottom:4 }}>📂</div>
+        <div style={{ fontWeight:700, color:"#374151", fontSize:14 }}>Upload Weekly Priority Account List (CSV)</div>
+        <div style={{ fontSize:12, color:"#9CA3AF", marginTop:3 }}>Drop CSV here or click to browse</div>
+        <input id="csv-upload" type="file" accept=".csv,.txt" style={{ display:"none" }} onChange={e=>{const f=e.target.files[0];if(f)process(f);}}/>
+      </div>
+      {preview && (
+        <div style={{ marginTop:10, background:"#fff", borderRadius:10, border:"1px solid #E5E7EB", padding:"16px 20px" }}>
+          <div style={{ fontWeight:700, fontSize:14, color:"#111827", marginBottom:10 }}>Import Preview</div>
+          <div style={{ display:"flex", gap:10, marginBottom:10, flexWrap:"wrap" }}>
+            <span style={{ fontSize:13, color:"#166534", background:"#DCFCE7", padding:"3px 12px", borderRadius:99 }}>✓ {preview.toAdd.length} new tickets</span>
+            {preview.skipped.length>0 && <span style={{ fontSize:13, color:"#92400E", background:"#FEF3C7", padding:"3px 12px", borderRadius:99 }}>⟳ {preview.skipped.length} already open (skipped)</span>}
+          </div>
+          {preview.toAdd.length>0 && <div style={{ fontSize:12, color:"#6B7280", marginBottom:12, maxHeight:80, overflowY:"auto", lineHeight:1.8 }}>{preview.toAdd.join(" · ")}</div>}
+          {preview.unrecognized?.length>0 && (
+            <div style={{ fontSize:12, color:"#92400E", background:"#FEF3C7", borderRadius:7, padding:"8px 12px", marginBottom:12 }}>
+              <strong>⚠ Not matched:</strong> {preview.unrecognized.join(", ")}
+              <div style={{ marginTop:4, color:"#78350F" }}>Tip: Nike accounts need a region suffix (e.g. Nike US, Nike EMEA). Apostrophes are handled automatically.</div>
+            </div>
+          )}
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={doImport} disabled={!preview.toAdd.length} style={{ padding:"8px 20px", borderRadius:8, fontSize:13, fontWeight:700, background:preview.toAdd.length?"#1D4ED8":"#D1D5DB", color:"#fff", border:"none", cursor:preview.toAdd.length?"pointer":"default" }}>
+              Open {preview.toAdd.length} Ticket{preview.toAdd.length!==1?"s":""}
+            </button>
+            <button onClick={()=>setPreview(null)} style={{ padding:"8px 16px", borderRadius:8, fontSize:13, fontWeight:600, background:"#F3F4F6", color:"#374151", border:"none", cursor:"pointer" }}>Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// ADD TICKET MODAL
+// ─────────────────────────────────────────────────────────────
+function AddTicketModal({ onAdd, onClose, existingNames, currentUser }) {
+  const [name, setName] = useState("");
+  const [amLead, setAmLead] = useState("");
+  const [podLead, setPodLead] = useState("");
+  const [priority, setPriority] = useState("high");
+  const [trigger, setTrigger] = useState("other");
+  const [error, setError] = useState("");
+
+  const suggestion = useMemo(()=>{
+    const key = name.trim().toLowerCase();
+    if (!key) return null;
+    for (const [dKey,dName] of Object.entries(NORM_LOOKUP)) {
+      if (dKey===key||dKey.startsWith(key)) return CLIENT_LOOKUP[dName];
+    }
+    return null;
+  },[name]);
+
+  const apply = ()=>{ if(!suggestion) return; setName(suggestion.name); setAmLead(suggestion.amLead); setPodLead(suggestion.podLead); };
+
+  const handleAdd = ()=>{
+    const trimmed = name.trim();
+    if (!trimmed) { setError("Account name is required."); return; }
+    if (existingNames.has(trimmed)) { setError("An open ticket for this account already exists."); return; }
+    const d = CLIENT_LOOKUP[trimmed];
+    const t = newTicket(trimmed, amLead.trim()||d?.amLead||"", podLead.trim()||d?.podLead||"", currentUser);
+    t.priority = priority; t.trigger = trigger;
+    onAdd(t);
+  };
+
+  const inputSt = { width:"100%", padding:"9px 11px", borderRadius:8, fontSize:13, border:"1.5px solid #E5E7EB", color:"#374151", outline:"none", boxSizing:"border-box" };
+  const labelSt = { fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:"0.07em", display:"block", marginBottom:6 };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }} onClick={onClose}>
+      <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:480, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", overflow:"hidden" }} onClick={e=>e.stopPropagation()}>
+        <div style={{ padding:"18px 24px 14px", borderBottom:"1px solid #F3F4F6", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ fontWeight:800, fontSize:16, color:"#111827" }}>Open New Ticket</div>
+          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:"#9CA3AF" }}>✕</button>
+        </div>
+        <div style={{ padding:"20px 24px", display:"flex", flexDirection:"column", gap:16 }}>
+          <div>
+            <label style={labelSt}>Account Name</label>
+            <input value={name} onChange={e=>{setName(e.target.value);setError("");}} placeholder="e.g. Nike EMEA" style={{ ...inputSt, borderColor:error?"#FCA5A5":"#E5E7EB" }} onKeyDown={e=>e.key==="Enter"&&handleAdd()}/>
+            {error && <div style={{ fontSize:12, color:"#DC2626", marginTop:4 }}>{error}</div>}
+            {suggestion&&suggestion.name!==name.trim() && (
+              <div style={{ marginTop:6, fontSize:12, color:"#1D4ED8", background:"#EFF6FF", borderRadius:6, padding:"6px 10px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <span>Found: <strong>{suggestion.name}</strong> — AM: {suggestion.amLead}, Pod: {suggestion.podLead}</span>
+                <button onClick={apply} style={{ background:"#1D4ED8", color:"#fff", border:"none", borderRadius:5, fontSize:11, fontWeight:700, padding:"3px 10px", cursor:"pointer", marginLeft:8, whiteSpace:"nowrap" }}>Use</button>
+              </div>
+            )}
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <div><label style={labelSt}>AM Lead</label><input value={amLead} onChange={e=>setAmLead(e.target.value)} placeholder="e.g. Molly Chason" style={inputSt}/></div>
+            <div><label style={labelSt}>Pod Lead</label><input value={podLead} onChange={e=>setPodLead(e.target.value)} placeholder="e.g. Marine Berrebi" style={inputSt}/></div>
+          </div>
+          <div>
+            <label style={labelSt}>Priority Level</label>
+            <div style={{ display:"flex", gap:6 }}>
+              {["atrisk","high","medium"].map(p=>(
+                <button key={p} onClick={()=>setPriority(p)} style={{ flex:1, padding:"7px 0", borderRadius:7, fontSize:11, fontWeight:700, textTransform:"capitalize", cursor:"pointer", background:priority===p?COLORS[p].badge:"#F9FAFB", color:priority===p?"#fff":"#9CA3AF", border:priority===p?`2px solid ${COLORS[p].badge}`:"2px solid #E5E7EB" }}>
+                  {p==="atrisk"?"At Risk":p.charAt(0).toUpperCase()+p.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={labelSt}>Trigger Type</label>
+            <select value={trigger} onChange={e=>setTrigger(e.target.value)} style={{ ...inputSt, background:"#fff", cursor:"pointer" }}>
+              {Object.entries(TRIGGER_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+        </div>
+        <div style={{ padding:"12px 24px 20px", display:"flex", justifyContent:"flex-end", gap:10, borderTop:"1px solid #F3F4F6" }}>
+          <button onClick={onClose} style={{ padding:"8px 18px", borderRadius:8, fontSize:13, fontWeight:600, background:"#F3F4F6", color:"#374151", border:"none", cursor:"pointer" }}>Cancel</button>
+          <button onClick={handleAdd} style={{ padding:"8px 22px", borderRadius:8, fontSize:13, fontWeight:700, background:"#166534", color:"#fff", border:"none", cursor:"pointer" }}>Open Ticket</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// MAIN APP
+// ─────────────────────────────────────────────────────────────
+function App() {
+  const [user, setUser] = useState(null);
+  const [tickets, setTickets] = useState([]);
+  // Persistent lead overrides — manual edits beat directory + CSV imports
+  const [leadOverrides, setLeadOverrides] = useState({});
+  const [amFilter, setAmFilter] = useState("All AM Leads");
+  const [podFilter, setPodFilter] = useState("All Pod Leads");
+  const [priorityFilter, setPriorityFilter] = useState("All Priorities");
+  const [statusFilter, setStatusFilter] = useState("all"); // open | closed | all
+  const [search, setSearch] = useState("");
+  const [showUpload, setShowUpload] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const updateTicket = useCallback((u) => {
+    setTickets(p => p.map(t => t.id===u.id?u:t));
+    // If this update changed any lead field, persist it as an override
+    setLeadOverrides(prev => {
+      const existing = prev[u.clientName]||{};
+      const updated = { ...existing };
+      if (u.amLead  !== undefined) updated.amLead  = u.amLead;
+      if (u.podLead !== undefined) updated.podLead = u.podLead;
+      if (u.opsLead !== undefined) updated.opsLead = u.opsLead;
+      return { ...prev, [u.clientName]: updated };
+    });
+  }, []);
+  const removeTicket = useCallback((id) => setTickets(p => p.filter(t => t.id!==id)), []);
+  const importTickets = useCallback((incoming) => { setTickets(p=>[...p,...incoming]); setShowUpload(false); }, []);
+  const addTicket = useCallback((t) => { setTickets(p=>[...p,t]); setShowAddModal(false); }, []);
+
+  const closeTicket = useCallback((id) => {
+    setTickets(p => p.map(t => t.id===id ? {...t, status:"closed", closedAt:nowIso()} : t));
+  }, []);
+  const reopenTicket = useCallback((id) => {
+    setTickets(p => p.map(t => t.id===id ? {...t, status:"open", closedAt:null} : t));
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return tickets
+      .filter(t => statusFilter==="all" ? true : t.status===statusFilter)
+      .filter(t => amFilter==="All AM Leads"||t.amLead===amFilter)
+      .filter(t => podFilter==="All Pod Leads"||t.podLead===podFilter)
+      .filter(t => priorityFilter==="All Priorities"||t.priority===priorityFilter)
+      .filter(t => !q||t.clientName.toLowerCase().includes(q)||(t.amLead||"").toLowerCase().includes(q)||(t.podLead||"").toLowerCase().includes(q)||(t.context?.value||"").toLowerCase().includes(q))
+      .sort((a,b) => {
+        if (a.status!==b.status) return a.status==="open"?-1:1;
+        return ({atrisk:0,high:1,medium:2}[a.priority]??3)-({atrisk:0,high:1,medium:2}[b.priority]??3);
+      });
+  }, [tickets, statusFilter, amFilter, podFilter, priorityFilter, search]);
+
+  const stats = useMemo(() => ({
+    open:   tickets.filter(t=>t.status==="open").length,
+    atrisk: tickets.filter(t=>t.status==="open"&&t.priority==="atrisk").length,
+    high:   tickets.filter(t=>t.status==="open"&&t.priority==="high").length,
+    closed: tickets.filter(t=>t.status==="closed").length,
+  }), [tickets]);
+
+  const sel = { padding:"7px 12px", borderRadius:8, border:"1.5px solid #E5E7EB", fontSize:13, color:"#374151", background:"#fff", cursor:"pointer", outline:"none" };
+
+  if (!user) return <AuthScreen onLogin={setUser}/>;
+
+  const firstName = user.split("@")[0].split(".")[0];
+  const displayName = firstName.charAt(0).toUpperCase()+firstName.slice(1);
+
+  return (
+    <div style={{ fontFamily:"'DM Sans','Inter',sans-serif", minHeight:"100vh", background:"#F1F5F9" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap'); * { box-sizing:border-box; } textarea,input,select { font-family:inherit; } ul { list-style-type:disc; }`}</style>
+
+      {/* Nav */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #E5E7EB", padding:"0 32px", position:"sticky", top:0, zIndex:50 }}>
+        <div style={{ maxWidth:1200, margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center", height:58 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ width:30, height:30, borderRadius:8, background:"#1D4ED8", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <span style={{ color:"#fff", fontSize:14 }}>◈</span>
+            </div>
+            <div>
+              <div style={{ fontSize:15, fontWeight:800, color:"#111827" }}>Client Priority Board</div>
+              <div style={{ fontSize:11, color:"#9CA3AF" }}>AM × Ops Alignment</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+            <span style={{ fontSize:12, color:"#9CA3AF" }}>👋 {displayName}</span>
+            <button onClick={()=>setShowAddModal(true)} style={{ padding:"6px 14px", borderRadius:8, fontSize:12, fontWeight:700, background:"#F0FDF4", color:"#166534", border:"1.5px solid #86EFAC", cursor:"pointer" }}>+ New Ticket</button>
+            <button onClick={()=>setShowUpload(v=>!v)} style={{ padding:"6px 14px", borderRadius:8, fontSize:12, fontWeight:700, background:showUpload?"#EFF6FF":"#F3F4F6", color:showUpload?"#1D4ED8":"#374151", border:`1.5px solid ${showUpload?"#BFDBFE":"#E5E7EB"}`, cursor:"pointer" }}>
+              {showUpload?"Hide Upload":"↑ Upload CSV"}
+            </button>
+            <button onClick={()=>setUser(null)} style={{ padding:"6px 12px", borderRadius:8, fontSize:12, color:"#9CA3AF", background:"none", border:"1px solid #E5E7EB", cursor:"pointer" }}>Sign out</button>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth:1200, margin:"0 auto", padding:"22px 32px" }}>
+
+        {showUpload && <UploadPanel existingTickets={tickets} onImport={importTickets} currentUser={user} leadOverrides={leadOverrides}/>}
+
+        <AISummary allTickets={tickets}/>
+
+        {/* Stats */}
+        {true && (
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:18 }}>
+            {[
+              {label:"Open Tickets",  value:stats.open,   color:"#1D4ED8", bg:"#EFF6FF", icon:"🎫"},
+              {label:"At Risk",        value:stats.atrisk, color:"#A21CAF", bg:"#FDF4FF", icon:"⚠️"},
+              {label:"High Priority",  value:stats.high,   color:"#F97316", bg:"#FFF7ED", icon:"⚡"},
+              {label:"Closed / Resolved", value:stats.closed, color:"#6B7280", bg:"#F3F4F6", icon:"✓"},
+            ].map(s=>(
+              <div key={s.label} style={{ background:s.bg, borderRadius:12, padding:"14px 18px", border:`1px solid ${s.color}22` }}>
+                <div style={{ fontSize:20 }}>{s.icon}</div>
+                <div style={{ fontSize:26, fontWeight:800, color:s.color, lineHeight:1.1, marginTop:4 }}>{s.value}</div>
+                <div style={{ fontSize:12, color:"#6B7280", marginTop:3, fontWeight:500 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Filters */}
+        {true && (
+          <div style={{ background:"#fff", borderRadius:"12px 12px 0 0", padding:"12px 18px", border:"1px solid #E5E7EB", borderBottom:"none", display:"flex", gap:10, flexWrap:"wrap", alignItems:"center" }}>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search accounts, leads, or context…" style={{ ...sel, flex:"1 1 200px", minWidth:160 }}/>
+            <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={sel}>
+              <option value="open">Open Tickets</option>
+              <option value="closed">Closed Tickets</option>
+              <option value="all">All Tickets</option>
+            </select>
+            <select value={amFilter} onChange={e=>setAmFilter(e.target.value)} style={sel}>{AM_LEADS.map(l=><option key={l}>{l}</option>)}</select>
+            <select value={podFilter} onChange={e=>setPodFilter(e.target.value)} style={sel}>{POD_LEADS.map(l=><option key={l}>{l}</option>)}</select>
+            <select value={priorityFilter} onChange={e=>setPriorityFilter(e.target.value)} style={sel}>
+              {PRIORITIES.map(p=><option key={p} value={p}>{p==="All Priorities"?p:p==="atrisk"?"At Risk":p.charAt(0).toUpperCase()+p.slice(1)}</option>)}
+            </select>
+            <span style={{ fontSize:12, color:"#9CA3AF", marginLeft:"auto" }}>{filtered.length} of {tickets.length}</span>
+          </div>
+        )}
+
+        {/* Column headers */}
+        {true && (
+          <div style={{ display:"grid", gridTemplateColumns:"1.6fr 1fr 1fr 110px 110px 28px", gap:12, padding:"9px 18px", background:"#F9FAFB", border:"1px solid #E5E7EB", borderTop:"none", borderBottom:"none" }}>
+            {["Account & Context","AM Lead","Pod Lead","Priority","Trigger",""].map(h=>(
+              <div key={h} style={{ fontSize:11, fontWeight:700, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.06em" }}>{h}</div>
+            ))}
+          </div>
+        )}
+
+        {/* Ticket cards */}
+        {true && (
+          <div style={{ border:"1px solid #E5E7EB", borderRadius:"0 0 12px 12px", overflow:"hidden" }}>
+            {filtered.length===0
+              ? <div style={{ padding:48, textAlign:"center", color:"#9CA3AF", fontSize:14, background:"#fff" }}>{tickets.length===0 ? "No tickets yet — upload a CSV or open a ticket manually." : "No tickets match your filters."}</div>
+              : filtered.map(t=>(
+                <ClientCard key={t.id} ticket={t} allTickets={tickets} onUpdate={updateTicket} onClose={closeTicket} onReopen={reopenTicket} onRemove={removeTicket} currentUser={user}/>
+              ))
+            }
+          </div>
+        )}
+
+        {true && (
+          <div style={{ marginTop:12, display:"flex", justifyContent:"space-between", fontSize:12, color:"#9CA3AF" }}>
+            <span>Click any row to expand · All saves are attributed to your email</span>
+            <span style={{ fontStyle:"italic" }}>Closed tickets are kept as permanent record</span>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {tickets.length===0&&!showUpload && (
+          <div style={{ textAlign:"center", padding:"80px 0", color:"#9CA3AF" }}>
+            <div style={{ fontSize:40, marginBottom:12 }}>🎫</div>
+            <div style={{ fontSize:16, fontWeight:700, color:"#374151" }}>No tickets yet</div>
+            <div style={{ fontSize:13, marginTop:6, display:"flex", gap:12, justifyContent:"center" }}>
+              <button onClick={()=>setShowUpload(true)} style={{ color:"#1D4ED8", background:"none", border:"none", cursor:"pointer", fontWeight:600, fontSize:13 }}>Upload a CSV</button>
+              <span style={{ color:"#D1D5DB" }}>or</span>
+              <button onClick={()=>setShowAddModal(true)} style={{ color:"#166534", background:"none", border:"none", cursor:"pointer", fontWeight:600, fontSize:13 }}>Open a ticket manually</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showAddModal && <AddTicketModal onAdd={addTicket} onClose={()=>setShowAddModal(false)} existingNames={new Set(tickets.filter(t=>t.status==="open").map(t=>t.clientName))} currentUser={user}/>}
+    </div>
+  );
+}
+
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
